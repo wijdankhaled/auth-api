@@ -1,9 +1,9 @@
+
 'use strict';
 
 const express = require('express');
 const dataModules = require('../models');
-const bearerAuth = require('../middelware/bearer');
-const acl = require('../middelware/acl');
+
 const router = express.Router();
 
 router.param('model', (req, res, next) => {
@@ -16,11 +16,11 @@ router.param('model', (req, res, next) => {
   }
 });
 
-router.get('/:model',bearerAuth, handleGetAll);
-router.get('/:model/:id',bearerAuth, handleGetOne);
-router.post('/:model',bearerAuth,acl('create'), handleCreate);
-router.put('/:model/:id',bearerAuth,acl('update'), handleUpdate);
-router.delete('/:model/:id',bearerAuth,acl('delete'), handleDelete);
+router.get('/:model', handleGetAll);
+router.get('/:model/:id', handleGetOne);
+router.post('/:model', handleCreate);
+router.put('/:model/:id', handleUpdate);
+router.delete('/:model/:id', handleDelete);
 
 async function handleGetAll(req, res) {
   let allRecords = await req.model.get();
@@ -54,5 +54,3 @@ async function handleDelete(req, res) {
 
 
 module.exports = router;
-
-
