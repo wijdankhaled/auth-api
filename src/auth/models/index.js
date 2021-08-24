@@ -3,7 +3,7 @@ require('dotenv').config();
 const { Sequelize, DataTypes } = require('sequelize');
 
 const users=require('./user')
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = `${process.env.DATABASE_URL}`;
 
 const DATABASE_CONFIG = {
   dialectOptions: {
