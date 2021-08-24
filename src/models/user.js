@@ -14,11 +14,27 @@ const user = (sequelize, DataTypes) => {
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+    }, role: {
+        type: DataTypes.ENUM('user', 'writer', 'editor', 'admin'),
+        defaultValue: 'user'
+    },
+    capabilities: {
+        type: DataTypes.VIRTUAL,
+        get() {
+            const acl = {
+                user: ['read'],
+                writer: ['read', 'create'],
+                editor: ['read', 'create', 'update'],
+                admin: ['read', 'create', 'update', 'delete'],
+            };
+            return acl[this.role];
+        }
     },
     token: {
         type: DataTypes.VIRTUAL,
         get() {
-            return jwt.sign({ username: this.username, test: 'this is a test payload' }, SECRET);
+            return jwt.sign({ username: this.username,capabilities: this.capabilities,
+                 test: 'this is a test payload' }, SECRET);
         },
         set(tokenObj) { 
             let token = jwt.sign(tokenObj, SECRET);
@@ -56,7 +72,7 @@ model.authenticateBearer = async function (token) {
 }
 
 
-  return model
+  return model;
 
 }
-module.exports=user;
+module.exports= user;
