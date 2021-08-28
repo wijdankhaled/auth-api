@@ -8,6 +8,7 @@ const basicAuth = require('../middelware/basic');
 const bearerAuth = require('../middelware/bearer');
 const permissions = require('../middelware/acl');
 
+
 authRouter.post('/signup', async (req, res, next) => {
   try {
     let userRecord = await users.create(req.body);
@@ -30,13 +31,20 @@ authRouter.post('/signin', basicAuth, (req, res, next) => {
 });
 
 authRouter.get('/users', bearerAuth, permissions('delete'), async (req, res, next) => {
-  const userRecords = await users.findAll({});
-  const list = userRecords.map(user => user.username);
-  res.status(200).json(list);
+  try {
+    const userRecords = await users.findAll({});
+    const list = userRecords.map(user => `${user.username}  ${user.role}`);
+    res.status(200).json(list);
+  } catch (e) {
+    next(e.message)
+  }
 });
+
 
 authRouter.get('/secret', bearerAuth, async (req, res, next) => {
   res.status(200).send('Welcome to the secret area')
 });
 
+
 module.exports = authRouter;
+

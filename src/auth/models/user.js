@@ -1,78 +1,67 @@
-'use strict'
-
-const bcrypt=require('bcrypt')
+'use strict';
+require('dotenv').config();
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-const SECRET = process.env.JWT_SECRET || 'super-secret';
-const user = (sequelize, DataTypes) => {
- const model=sequelize.define("users", {
+const SECRET = process.env.SECRET || 'Eman-Khaled-Tariq';
+const userModel = (sequelize, DataTypes) => {
+  const model = sequelize.define('Users', {
     username: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
+      required: true,
+      unique: true
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
-    }, role: {
-        type: DataTypes.ENUM('user', 'writer', 'editor', 'admin'),
-        defaultValue: 'user'
+      required: true
     },
-    capabilities: {
-        type: DataTypes.VIRTUAL,
-        get() {
-            const acl = {
-                user: ['read'],
-                writer: ['read', 'create'],
-                editor: ['read', 'create', 'update'],
-                admin: ['read', 'create', 'update', 'delete'],
-            };
-            return acl[this.role];
-        }
+    role: {
+      type: DataTypes.ENUM('user', 'writer', 'editor', 'admin'),
+      required: true,
+      defaultValue: 'user'
     },
     token: {
-        type: DataTypes.VIRTUAL,
-        get() {
-            return jwt.sign({ username: this.username,capabilities: this.capabilities,
-                 test: 'this is a test payload' }, SECRET);
-        },
-        set(tokenObj) { 
-            let token = jwt.sign(tokenObj, SECRET);
-            return token;
-        },
-    
+      type: DataTypes.VIRTUAL,
+      get() {
+        return jwt.sign({ username: this.username }, SECRET);
+      },
+      set(tokenObj) {
+        let token = jwt.sign(tokenObj, SECRET);
+        return token;
+      }
+    },
+    capabilities: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        const acl = {
+          user: ['read'],
+          writer: ['read', 'create'],
+          editor: ['read', 'create', 'update'],
+          admin: ['read', 'create', 'update', 'delete']
+        };
+        return acl[this.role];
+      }
     }
-
   });
-  model.beforeCreate(async(user1)=>{
-      let hash=await bcrypt.hash(user1.password,10)
-      user1.password=hash
-  })
-model.authenticateBasic =async function(username,password){
-  const user=await this.findOne({where:{username}})
-  const valid=await bcrypt.compare(password,user.password)
-  if(valid){
-      return user
-  }
-  throw new Error('invalid user')
-}
-
-model.authenticateBearer = async function (token) {
-    console.log(token);
-    console.log(jwt.decode(token));
-
-    const verifiedToken = jwt.verify(token, SECRET);
-
-    //if not verfiied you need to throw an error
-    const user = await this.findOne({ where: { username: verifiedToken.username } });
-
-    if(user) { return user;}
-    throw new Error('Invalid user');
-
-}
-
-
+  model.beforeCreate(async (user) => {
+    let hashedPass = await bcrypt.hash(user.password, 10);
+    user.password = hashedPass;
+  });
+  model.authenticateBasic = async function (username, password) {
+    const user = await this.findOne({ where: { username } });
+    const valid = await bcrypt.compare(password, user.password);
+    if (valid) { return user; }
+    throw new Error('Invalid User');
+  };
+  model.authenticateToken = async function (token) {
+    try {
+      const parsedToken = jwt.verify(token, SECRET);
+      const user = await this.findOne({ where: { username: parsedToken.username } });
+      if (user) { return user; }
+      throw new Error("User Not Found");
+    } catch (e) {
+      throw new Error(e.message)
+    }
+  };
   return model;
-
 }
-module.exports= user;
+module.exports = userModel;
